@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 	"github.com/rs/cors"
@@ -11,10 +12,15 @@ import (
 	"os"
 )
 
+//go:embed files
+var fileFS embed.FS
+
 func main() {
+	fileserver := http.FileServer(http.FS(fileFS))
 	router := bunrouter.New(
 		bunrouter.Use(reqlog.NewMiddleware()))
 	router.GET("/", indexHandler)
+	router.GET("/files/*path", bunrouter.HTTPHandler(fileserver))
 	router.Use(newErrorMiddleware).
 		Use(newCorsMiddleware([]string{"http://localhost:8080"})).
 		WithGroup("/api/v1/", func(g *bunrouter.Group) {
@@ -57,13 +63,10 @@ func indexHandler(w http.ResponseWriter, req bunrouter.Request) error {
 
 var indexTmpl = `
 <html>
-	<ul>
-		<li><a ref="/api/v1/users/123">/api/v1/users/123</a></li>
-		<li><a ref="/api/v1/error">/api/v1/error</a></li>
-		
-		<li><a ref="/api/v1/users/123">/api/v1/users/123</a></li>
-		<li><a ref="/api/v1/error">/api/v1/error</a></li>
-	</ul>
+  <h1>Welcome</h1>
+  <ul>
+    <li><a href="/files/">/files/</a></li>
+  </ul>
 </html>
 `
 
